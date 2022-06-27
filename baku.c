@@ -18,7 +18,7 @@ void play(int fileNumber){
 	time_t nowTime = time(NULL);
 	char path[63];
 	nowTime = (int)nowTime;
-	if((nowTime % 3) == 0){ //30秒に一回再生
+	if((nowTime % 30) == 0){ //30秒に一回再生
 		playNumber = rand() % fileNumber + 1;
 		sprintf(path, "/usr/bin/aplay %d.wav",playNumber);
 		printf("Play:%d\n",playNumber);
@@ -32,9 +32,9 @@ void record(int fileNumber){
 	pid_t pid;
 	char path[63];
 	char effectPath[63];
-	sprintf(path, "%d.wav",fileNumber);//録音用のファイル名
+	sprintf(path, "%d_original.wav",fileNumber);//録音用のファイル名
+	sprintf(effectPath, "/usr/bin/sox %d_original.wav %d.wav norm pitch 500 speed 2",fileNumber,fileNumber);//こっちは変換用の文字列
 	pid = fork();
-	sprintf(effectPath, "/usr/bin/sox %d.wav %d.wav pitch 400 speed 1.5",fileNumber,fileNumber);//こっちは変換用の文字列
 	switch(pid) {
 		case -1:
 			exit(1);
@@ -42,7 +42,7 @@ void record(int fileNumber){
 			execl("/usr/bin/arecord", "arecord","-D","plughw:2,0","-f","cd",path,NULL);//子プロセスで録音
 		default: //こっちが親プロセス	
 			printf("recording PID:%d\n",pid);
-			for(int i = 0;i < 5000;i++){}
+			for(int i = 0;i < 50000000;i++){printf("a");}
 			boxOpen = 0;
 			while(boxOpen == 1);//閉じてから動き出す
 			printf("Killing record\n");
@@ -50,8 +50,10 @@ void record(int fileNumber){
 			printf("Recording finished\n");
 			system(effectPath);//変換する
 			fseek(fp,0,SEEK_SET);
-			fputc(fileNumber,fp);//インデックス用のファイルに書き込む
+			//fputc(fileNumber,fp);//インデックス用のファイルに書き込む
+			fprintf(fp,"%d",fileNumber);
 	}
+	exit(0);
 	return;
 
 }
@@ -62,13 +64,15 @@ int main(){
 	fp = fopen("baku_record","r+");
 	if(fp == NULL){
 		fp = fopen("baku_record","w+");
-		fputc(0, fp);
+		//fputc(0, fp);
+		fprintf(fp,"%d",0);
 		printf("New index file created");
 	}
-	fileNumber = fgetc(fp);
+	//fileNumber = fgetc(fp);
+	fscanf(fp,"%d",&fileNumber);
 	printf("Initial fileNum:%d\n",fileNumber);
 	while(1){
-		printf("Loop Start:filenumber:%d\n",fileNumber);
+		//printf("Loop Start:filenumber:%d\n",fileNumber);
 		if(boxOpen == 1){
 			fileNumber++;
 			record(fileNumber);
