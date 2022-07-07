@@ -5,8 +5,22 @@
 #include <unistd.h>
 #include <time.h>
 
-int boxOpen = 1;//スイッチのこと１が開いてる、０が閉じてる
+//int boxOpen = 1;//スイッチのこと１が開いてる、０が閉じてる
 FILE *fp;//録音の一覧用のファイルポインタ
+
+
+int boxOpen(){
+	int n;
+	FILE *fpOpen;
+	fpOpen = fopen("boxOpen", "r");
+	if (fpOpen == NULL){
+		return 0;//ファイルがなければ開いてないことにする
+	}
+	fseek(fpOpen,0,SEEK_SET);
+	fscanf(fpOpen,"%d",&n);//読む
+	fclose(fpOpen);
+	return n;
+}
 
 void play(int fileNumber){
 	printf("entering playing func\n");
@@ -33,27 +47,31 @@ void record(int fileNumber){
 	char path[63];
 	char effectPath[63];
 	sprintf(path, "%d_original.wav",fileNumber);//録音用のファイル名
-	sprintf(effectPath, "/usr/bin/sox %d_original.wav %d.wav norm pitch 500 speed 2",fileNumber,fileNumber);//こっちは変換用の文字列
+	sprintf(effectPath, "/usr/bin/sox %d_original.wav %d.wav norm pitch 120 speed 1.2",fileNumber,fileNumber);//こっちは変換用の文字列
 	pid = fork();
 	switch(pid) {
 		case -1:
 			exit(1);
 		case 0://子プロセスで録音
-			execl("/usr/bin/arecord", "arecord","-D","plughw:2,0","-f","cd",path,NULL);//子プロセスで録音
+			//execl("/usr/bin/arecord", "arecord","-D","plughw:2,0","-f","cd",path,NULL);//子プロセスで録音
+			execl("/usr/bin/arecord", "arecord","-f","cd",path,NULL);//子プロセスで録音
 		default: //こっちが親プロセス	
 			printf("recording PID:%d\n",pid);
+			
+			/* //テスト用
 			for(int i = 0;i < 50000000;i++){printf("a");}
 			boxOpen = 0;
-			while(boxOpen == 1);//閉じてから動き出す
+			*/
+			
+			while(boxOpen() == 1);//閉じてから動き出す
 			printf("Killing record\n");
 			kill(pid, SIGINT);//録音するプロセスを殺して
 			printf("Recording finished\n");
 			system(effectPath);//変換する
 			fseek(fp,0,SEEK_SET);
-			//fputc(fileNumber,fp);//インデックス用のファイルに書き込む
-			fprintf(fp,"%d",fileNumber);
+			fprintf(fp,"%d",fileNumber);//インデックス用のファイルに書き込む
 	}
-	exit(0);
+	//exit(0);
 	return;
 
 }
@@ -68,17 +86,24 @@ int main(){
 		fprintf(fp,"%d",0);
 		printf("New index file created");
 	}
-	//fileNumber = fgetc(fp);
-	fscanf(fp,"%d",&fileNumber);
-	printf("Initial fileNum:%d\n",fileNumber);
+	fclose(fp);
+	//printf("Initial fileNum:%d\n",fileNumber);
 	while(1){
-		//printf("Loop Start:filenumber:%d\n",fileNumber);
-		if(boxOpen == 1){
+		//ファイル数を見るブロック
+		fp = fopen("baku_record","r+");
+		fseek(fp,0,SEEK_SET);
+		fscanf(fp,"%d",&fileNumber);
+		
+
+		printf("Loop Start:filenumber:%d\n",fileNumber);
+
+		if(boxOpen() == 1){
 			fileNumber++;
 			record(fileNumber);
 		}
 		play(fileNumber);
-		//printf("Loop End\n");
+
+		fclose(fp);
 	}
 }	
 
