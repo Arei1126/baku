@@ -38,7 +38,7 @@ void record(int fileNumber){
 	char path[63];
 	char effectPath[63];
 	sprintf(path, "%d_original.wav",fileNumber);//録音用のファイル名
-	sprintf(effectPath, "/usr/bin/sox %d_original.wav %d.wav norm pitch 500 speed 2",fileNumber,fileNumber);//こっちは変換用の文字列
+	sprintf(effectPath, "/usr/bin/sox %d_original.wav %d.wav norm pitch 250 speed 1.5",fileNumber,fileNumber);//こっちは変換用の文字列
 	pid = fork();
 	switch(pid) {
 		case -1:
@@ -54,8 +54,8 @@ void record(int fileNumber){
 			kill(pid, SIGINT);//録音するプロセスを殺して
 			printf("Recording finished\n");
 			system(effectPath);//変換する
+
 			fseek(fp,0,SEEK_SET);
-			//fputc(fileNumber,fp);//インデックス用のファイルに書き込む
 			fprintf(fp,"%d",fileNumber);
 	}
 	return;
@@ -79,24 +79,22 @@ int main(){
 		fprintf(fp,"%d",0);
 		printf("New index file created");
 	}
-	//fileNumber = fgetc(fp);
-	//fscanf(fp,"%d",&fileNumber);
-	fileNumber = 0;
-	printf("Initial fileNum:%d\n",fileNumber);
-	
+	fclose(fp);
 
 	while(1){
-		/*
-		//fseek(fp,0,SEEK_SET);
-		//fscanf(fp,"%d",&fileNumber);
-		//printf("Current fileNum:%d\n",fileNumber);
-		*/
+		fp = fopen("baku_record","r+");
+		fseek(fp,0,SEEK_SET);
+		fscanf(fp,"%d",&fileNumber);
+
+		//printf("Loop Start:filenumber:%d\n",fileNumber);
+
 		if(boxOpen() == 1){
 			fileNumber++;
 			record(fileNumber);
 		}
 		play(fileNumber);
-		//printf("Loop End\n");
+		
+		fclose(fp);
 	}
 }	
 

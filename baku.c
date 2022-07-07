@@ -82,7 +82,6 @@ int main(){
 	fp = fopen("baku_record","r+");
 	if(fp == NULL){
 		fp = fopen("baku_record","w+");
-		//fputc(0, fp);
 		fprintf(fp,"%d",0);
 		printf("New index file created");
 	}
