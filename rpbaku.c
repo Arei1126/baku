@@ -9,6 +9,17 @@
 //int boxOpen = 0;//スイッチのこと１が開いてる、０が閉じてる
 FILE *fp;//録音の一覧用のファイルポインタ
 
+//指定秒数だけ止まる関数
+int recordWait(time_t duration) {
+	time_t startTime = time(NULL);
+	
+	for(time_t currTime = time(NULL); (currTime - startTime ) <= duration; currTime = time(NULL)) {
+		printf("waiting\n");
+	}
+	printf("ok\n");
+	return 0;
+} 
+
 int boxOpen(){
 	return gpioRead(21);
 }
@@ -34,6 +45,8 @@ void play(int fileNumber){
 
 void record(int fileNumber){
 	printf("entering recording function\n");
+	//録音前の音
+	system("/usr/bin/aplay /home/arei/baku/soundeffect/recStart.wav");
 	pid_t pid;
 	char path[63];
 	char effectPath[63];
@@ -49,7 +62,10 @@ void record(int fileNumber){
 			 // execl("/usr/bin/arecord", "arecord","-f","cd",path,NULL);//子プロセスで録音
 		default: //こっちが親プロセス	
 			printf("recording PID:%d\n",pid);
-			while(boxOpen() == 1);//閉じてから動き出す
+
+			//while(boxOpen() == 1);//閉じてから動き出す
+			recordWait((time_t)10);//時間経過で抜ける
+			
 			printf("Killing record\n");
 			kill(pid, SIGINT);//録音するプロセスを殺して
 			printf("Recording finished\n");
@@ -58,6 +74,8 @@ void record(int fileNumber){
 			fseek(fp,0,SEEK_SET);
 			fprintf(fp,"%d",fileNumber);
 	}
+	//録音前の後
+	system("/usr/bin/aplay /home/arei/baku/soundeffect/recEnd.wav");
 	return;
 
 }
