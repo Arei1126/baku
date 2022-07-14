@@ -8,7 +8,18 @@
 //int boxOpen = 1;//スイッチのこと１が開いてる、０が閉じてる
 FILE *fp;//録音の一覧用のファイルポインタ
 
+//指定秒数だけ止まる関数
+int recordWait(time_t duration) {
+	time_t startTime = time(NULL);
+	
+	for(time_t currTime = time(NULL); (currTime - startTime ) <= duration; currTime = time(NULL)) {
+		printf("waiting\n");
+	}
+	printf("ok\n");
+	return 0;
+} 
 
+//開いてるか開いているかな
 int boxOpen(){
 	int n;
 	FILE *fpOpen;
@@ -22,7 +33,9 @@ int boxOpen(){
 	return n;
 }
 
+//再生用の関数、存在するファイル数が引数。durationの時間の間隔でランダムに1曲再生します。
 void play(int fileNumber){
+	int duration = 15;//duration秒に一回再生
 	printf("entering playing func\n");
 	if(fileNumber == 0){//ファイル数が0なら再生しない
 		printf("No playable files");
@@ -32,7 +45,7 @@ void play(int fileNumber){
 	time_t nowTime = time(NULL);
 	char path[63];
 	nowTime = (int)nowTime;
-	if((nowTime % 30) == 0){ //30秒に一回再生
+	if((nowTime % duration) == 0){ 
 		playNumber = rand() % fileNumber + 1;
 		sprintf(path, "/usr/bin/aplay %d.wav",playNumber);
 		printf("Play:%d\n",playNumber);
@@ -41,7 +54,10 @@ void play(int fileNumber){
 	return;
 }
 
+//録音用の関数、存在するファイル数を引数にとる。何かのきっかけで、録音して、何かのきっかけで録音を終えて、変換。新たなファイルを生成します。
 void record(int fileNumber){
+	//録音前の音
+	system("/usr/bin/aplay /home/arei/baku/soundeffect/recStart.wav");
 	printf("entering recording function\n");
 	pid_t pid;
 	char path[63];
@@ -58,20 +74,22 @@ void record(int fileNumber){
 		default: //こっちが親プロセス	
 			printf("recording PID:%d\n",pid);
 			
-			/* //テスト用
-			for(int i = 0;i < 50000000;i++){printf("a");}
-			boxOpen = 0;
-			*/
+			recordWait((time_t)10);//時間経過で抜ける
+
+			//while(boxOpen() == 1);//閉じてから動き出すようにするならこっち
 			
-			while(boxOpen() == 1);//閉じてから動き出す
 			printf("Killing record\n");
 			kill(pid, SIGINT);//録音するプロセスを殺して
 			printf("Recording finished\n");
 			system(effectPath);//変換する
 			fseek(fp,0,SEEK_SET);
 			fprintf(fp,"%d",fileNumber);//インデックス用のファイルに書き込む
+
+			
 	}
-	//exit(0);
+	//録音後の音
+	system("/usr/bin/aplay /home/arei/baku/soundeffect/recEnd.wav");
+
 	return;
 
 }
