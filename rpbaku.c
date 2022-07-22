@@ -6,15 +6,20 @@
 #include <time.h>
 #include <pigpio.h>
 
-//int boxOpen = 0;//スイッチのこと１が開いてる、０が閉じてる
-FILE *fp;//録音の一覧用のファイルポインタ
+//ACTION ボタンを押すなり、何らかのアクションがあったことを表す
+#define ACTION 0
+#define NO_ACTION 1
 
+
+//int boxOpen = NO_ACTION;//スイッチのこと１が開いてる、０が閉じてる
+FILE *fp;//録音の一覧用のファイルポインタ
+FILE *fp2;
 //指定秒数だけ止まる関数
 int recordWait(time_t duration) {
 	time_t startTime = time(NULL);
 	
 	for(time_t currTime = time(NULL); (currTime - startTime ) <= duration; currTime = time(NULL)) {
-		printf("waiting\n");
+		//printf("waiting\n");
 	}
 	printf("ok\n");
 	return 0;
@@ -34,7 +39,7 @@ void play(int fileNumber){
 	time_t nowTime = time(NULL);
 	char path[63];
 	nowTime = (int)nowTime;
-	if((nowTime % 12) == 0){ //30秒に一回再生
+	if((nowTime % 30) == 0){ //30秒に一回再生
 		playNumber = rand() % fileNumber + 1;
 		sprintf(path, "/usr/bin/aplay %d.wav",playNumber);
 		printf("Play:%d\n",playNumber);
@@ -46,7 +51,7 @@ void play(int fileNumber){
 void record(int fileNumber){
 	printf("entering recording function\n");
 	//録音前の音
-	system("/usr/bin/aplay /home/arei/baku/soundeffect/recStart.wav");
+	system("/usr/bin/aplay /home/naohiro/baku/baku/soundeffect/recStartZunda.wav");
 	pid_t pid;
 	char path[63];
 	char effectPath[63];
@@ -63,19 +68,19 @@ void record(int fileNumber){
 		default: //こっちが親プロセス	
 			printf("recording PID:%d\n",pid);
 
-			//while(boxOpen() == 1);//閉じてから動き出す
+			//while(boxOpen() == ACTION);//閉じてから動き出す
 			recordWait((time_t)10);//時間経過で抜ける
 			
 			printf("Killing record\n");
 			kill(pid, SIGINT);//録音するプロセスを殺して
 			printf("Recording finished\n");
+			system("/usr/bin/aplay /home/naohiro/baku/baku/soundeffect/recEndZunda.wav");
 			system(effectPath);//変換する
 
 			fseek(fp,0,SEEK_SET);
 			fprintf(fp,"%d",fileNumber);
 	}
-	//録音前の後
-	system("/usr/bin/aplay /home/arei/baku/soundeffect/recEnd.wav");
+	//録音の後
 	return;
 
 }
@@ -90,29 +95,34 @@ int main(){
 
 	int fileNumber;//これが扱うファイル名になる
 
-	fp = fopen("baku_record.txt","r+");
+	fp = fopen("baku_record.txt","r");
 	if(fp == NULL){
-		fp = fopen("baku_record.txt","w+");
-		//fputc(0, fp);
-		fprintf(fp,"%d",0);
-		printf("New index file created");
+		exit(1);
+		/*
+		fp2 = fopen("baku_record.txt","w");
+		fprintf(fp2,"%d",0);
+		printf("New index file created\n");
+		fclose(fp2);
+		*/
 	}
-	fclose(fp);
-
+	else{
+		fclose(fp);
+	}
 	while(1){
-		fp = fopen("baku_record","r+");
+		fp2 = fopen("baku_record","r+");
 		fseek(fp,0,SEEK_SET);
 		fscanf(fp,"%d",&fileNumber);
-
 		//printf("Loop Start:filenumber:%d\n",fileNumber);
+		printf("%d",boxOpen());
 
-		if(boxOpen() == 1){
+		if(boxOpen() == ACTION){
 			fileNumber++;
 			record(fileNumber);
 		}
-		play(fileNumber);
+		//ここがランダム再生、発表会用に無音
+		//play(fileNumber);
 		
-		fclose(fp);
+		fclose(fp2);
 	}
 }	
 
