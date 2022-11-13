@@ -92,7 +92,7 @@ void record(int fileNumber){
 
 			//while(boxOpen() == ACTION);//閉じてから動き出す
 			//recordWait((time_t)10);//時間経過で抜ける
-			while(chkAction == ACTION); //持ち上げている間はループして待つ
+			while(chkAction() == ACTION); //持ち上げている間はループして待つ
 
 			printf("Killing record\n");
 			kill(pid, SIGINT);//録音するプロセスを殺して
