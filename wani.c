@@ -50,6 +50,8 @@ int chkStop(){
 }
 
 void play(int fileNumber){
+	//pid_t pid;
+
 	//printf("entering playing func\n");
 	if(fileNumber == 0){//ファイル数が0なら再生しない
 		printf("No playable files");
@@ -57,36 +59,59 @@ void play(int fileNumber){
 	}
 	int playNumber;
 	time_t nowTime = time(NULL);
-	char path[63];
+	char path[1024];
 	nowTime = (int)nowTime;
 	if((nowTime % INTERVAL) == 0){ //30秒に一回再生
 		playNumber = rand() % fileNumber + 1;
 		sprintf(path, "/usr/bin/aplay %d.wav",playNumber);
 		printf("Play:%d\n",playNumber);
 		system(path);
+	
+	/*	pid = fork();
+		switch(pid) {
+			case -1:
+				exit(-1);
+			case 0://In Child Process
+				system(path);
+			default://In Parent Process
+				if(chkAction() == ACTION)
+
 		}
+		*/
 	return;
+	}
 }
 
 void record(int fileNumber){
 	printf("entering recording function\n");
 
 //録音前の音
-	system("/usr/bin/aplay /home/naohiro/baku/baku/soundeffect/recStartZunda.wav");
+	system("/usr/bin/aplay /home/naohiro/baku/baku/soundeffect/recStartZundaOhako.wav");
 
 	pid_t pid;
-	char path[63];
-	char effectPath[63];
+	char path[1024];
+	char effectPath[1024];
+	char playPath[1024];
 	sprintf(path, "%d_original.wav",fileNumber);//録音用のファイル名
-	sprintf(effectPath, "/usr/bin/sox %d_original.wav %d.wav norm pitch 250 speed 1.5",fileNumber,fileNumber);//こっちは変換用の文字列
+	//printf("File name is %s\n",path);
+	sprintf(effectPath, "/usr/bin/sox %d_original.wav %d.wav silence 1 5 10%% norm pitch 600",fileNumber,fileNumber);//Converting Strings for Muon
+	//printf("Effect path is %s\n",effectPath);
+	//sprintf(effectPath, "/usr/bin/sox %d_original.wav %d.wav norm pitch 250 speed 1.25",fileNumber,fileNumber);//こっちは変換用の文字列
+	sprintf(playPath, "/usr/bin/aplay %d.wav", fileNumber );
+	//printf("play path is %s\n",playPath);
+	//printf("path is %s\n",path);
 	pid = fork();
 	switch(pid) {
 		case -1:
 			exit(1);
 		case 0://子プロセスで録音
-			execl("/usr/bin/arecord", "arecord","-D","plughw:1,0","-f","cd",path,NULL);//子プロセスで録音
+			//execl("/usr/bin/arecord", "arecord","-D","plughw:1,0","-f","cd",path,NULL);//子プロセスで録音
+			//printf("In the Chiled what is path : %s\n",path);
+			execl("/usr/bin/arecord", "arecord", "-D", "plughw:CARD=UCAMDLK130T,DEV=0", "-f", "cd",path,NULL);//子プロセスで録音
 			
-			 // execl("/usr/bin/arecord", "arecord","-f","cd",path,NULL);//子プロセスで録音
+			
+			printf("%s in child process \n",path);
+			//execl("/usr/bin/arecord", "arecord","-f","cd",path,NULL);//子プロセスで録音
 		default: //こっちが親プロセス	
 			printf("recording PID:%d\n",pid);
 
@@ -97,9 +122,12 @@ void record(int fileNumber){
 			printf("Killing record\n");
 			kill(pid, SIGINT);//録音するプロセスを殺して
 			printf("Recording finished\n");
-			system("/usr/bin/aplay /home/naohiro/baku/baku/soundeffect/recEndZunda.wav");
+			
+			//system("/usr/bin/aplay /home/naohiro/baku/baku/soundeffect/recStop.wav");
+			printf("Starting Effect\n");
 			system(effectPath);//変換する
-
+			system(playPath);//Oumu Gaeshi
+			
 			fseek(fp,0,SEEK_SET);
 			fprintf(fp,"%d",fileNumber);
 	}
