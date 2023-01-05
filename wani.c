@@ -26,7 +26,7 @@
 FILE *fp;//録音の一覧用のファイルポインタ
 FILE *fp2;
 
-#バリエーションのためのカウンタ
+//バリエーションのためのカウンタ
 char Calling = 0;
 char Greeting = 0;
 char Explaination = 0;
@@ -87,7 +87,7 @@ void play(int fileNumber){
 		playNumber = rand() % fileNumber + 1;  // ランダムに一つ選ぶ
 
 		//  呼びかけ用の部分
-		sprintf(call, "/usr/bin/splay call_%d.wav", Calling);
+		sprintf(call, "/usr/bin/aplay call_%d.wav", Calling);
 		Calling++;  // 
 		CHK_MAX(Calling, CALLING_MAX);  
 
@@ -139,7 +139,7 @@ void record(int fileNumber){
 	//ここから反応のバリエーションを増やすための処理が入る 
 	sprintf(greeting, "/usr/bin/aplay greet_%d.wav",Greeting);  //  あいさつ
 	Greeting++;
-	CHK_MAX(Greeing, GREETING_MAX);
+	CHK_MAX(Greeting, GREETING_MAX);
 
 	sprintf(recStart, "/usr/bin/aplay recStart_%d.wav",Rec);
 	sprintf(recStop, "/usr/bin/aplay recStop_%d.wav",Rec);
@@ -172,7 +172,8 @@ void record(int fileNumber){
 		case 0://子プロセスで録音
 			//execl("/usr/bin/arecord", "arecord","-D","plughw:1,0","-f","cd",path,NULL);//子プロセスで録音
 			//printf("In the Chiled what is path : %s\n",path);
-			execl("/usr/bin/arecord", "arecord", "-D", "plughw:CARD=UCAMDLK130T,DEV=0", "-f", "cd",path,NULL);//子プロセスで録音
+			execl("/usr/bin/arecord", "arecord","-D", "plughw:CARD=U0x46d0x808,DEV=0", "-f", "cd",path,NULL);//子プロセスで録音
+			//execl("/usr/bin/arecord", "arecord", "-D", "plughw:CARD=UCAMDLK130T,DEV=0", "-f", "cd",path,NULL);//子プロセスで録音
 			
 			
 			printf("%s in child process \n",path);
